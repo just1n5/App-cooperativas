@@ -1,0 +1,34 @@
+{
+  "name": "orden-interno",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SaaS application for cooperative management and regulatory compliance (SICSES)",
+  "author": "Your Organization",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "db:migrate": "pnpm --filter @orden-interno/database migrate:deploy",
+    "db:studio": "pnpm --filter @orden-interno/database studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.1",
+    "turbo": "^1.11.3",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.1"
+}

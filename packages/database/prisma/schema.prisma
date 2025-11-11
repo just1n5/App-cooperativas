@@ -1,0 +1,400 @@
+// Prisma Schema for Orden Interno - Cooperative Management System
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// MULTI-TENANCY & AUTHENTICATION
+// ==========================================
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  nit       String   @unique
+  email     String
+  phone     String?
+  address   String?
+  city      String?
+  status    TenantStatus @default(ACTIVE)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users           User[]
+  associates      Associate[]
+  governanceBodies GovernanceBody[]
+  financialAccounts FinancialAccount[]
+  sicsesReports   SicsesReport[]
+  auditLogs       AuditLog[]
+
+  @@map("tenants")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Hashed with bcrypt
+  firstName String
+  lastName  String
+  role      UserRole @default(USER)
+  status    UserStatus @default(ACTIVE)
+
+  // Multi-tenancy
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  auditLogs   AuditLog[]
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN       // Full system access
+  MANAGER     // Approve and generate reports
+  ACCOUNTANT  // Upload financial data
+  AUDITOR     // Read-only access
+  USER        // Basic access
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// ==========================================
+// MODULE 2: ASSOCIATES & GOVERNANCE (CRM)
+// ==========================================
+
+model Associate {
+  id              String   @id @default(cuid())
+
+  // Personal Information
+  documentType    DocumentType
+  documentNumber  String
+  firstName       String
+  middleName      String?
+  lastName        String
+  secondLastName  String?
+  dateOfBirth     DateTime
+  gender          Gender
+
+  // Contact Information
+  email           String?
+  phone           String?
+  mobile          String?
+  address         String?
+  city            String?
+  department      String?
+
+  // Cooperative Information
+  memberNumber    String
+  joinDate        DateTime
+  status          AssociateStatus @default(ACTIVE)
+  contributions   Decimal @default(0) @db.Decimal(15, 2)
+
+  // Multi-tenancy
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  governancePositions GovernancePosition[]
+
+  @@unique([tenantId, documentNumber])
+  @@unique([tenantId, memberNumber])
+  @@index([tenantId])
+  @@index([status])
+  @@map("associates")
+}
+
+enum DocumentType {
+  CC    // Cédula de Ciudadanía
+  CE    // Cédula de Extranjería
+  TI    // Tarjeta de Identidad
+  NIT   // Número de Identificación Tributaria
+  PASSPORT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AssociateStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  RETIRED
+}
+
+model GovernanceBody {
+  id          String   @id @default(cuid())
+  name        String
+  type        GovernanceBodyType
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  status      BodyStatus @default(ACTIVE)
+
+  // Multi-tenancy
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  positions   GovernancePosition[]
+  meetings    Meeting[]
+
+  @@index([tenantId])
+  @@map("governance_bodies")
+}
+
+enum GovernanceBodyType {
+  BOARD_OF_DIRECTORS        // Consejo de Administración
+  OVERSIGHT_COMMITTEE       // Junta de Vigilancia
+  GENERAL_ASSEMBLY          // Asamblea General
+  MANAGEMENT_COMMITTEE      // Comité de Gerencia
+  AUDIT_COMMITTEE           // Comité de Auditoría
+  RISK_COMMITTEE            // Comité de Riesgos
+}
+
+enum BodyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model GovernancePosition {
+  id          String   @id @default(cuid())
+  position    String   // e.g., "Presidente", "Secretario", "Vocal"
+  startDate   DateTime
+  endDate     DateTime?
+
+  // Relations
+  bodyId      String
+  body        GovernanceBody @relation(fields: [bodyId], references: [id], onDelete: Cascade)
+
+  associateId String
+  associate   Associate @relation(fields: [associateId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bodyId])
+  @@index([associateId])
+  @@map("governance_positions")
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  type        MeetingType
+  date        DateTime
+  location    String?
+  agenda      String?
+  minutes     String?  // Meeting minutes (acta)
+
+  // Relations
+  bodyId      String
+  body        GovernanceBody @relation(fields: [bodyId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bodyId])
+  @@index([date])
+  @@map("meetings")
+}
+
+enum MeetingType {
+  ORDINARY
+  EXTRAORDINARY
+}
+
+// ==========================================
+// MODULE 3: FINANCIAL DATA
+// ==========================================
+
+model FinancialAccount {
+  id            String   @id @default(cuid())
+
+  // Chart of Accounts (Catálogo de Cuentas)
+  code          String   // e.g., "1105", "2205"
+  name          String
+  accountType   AccountType
+  nature        AccountNature  // DEBIT or CREDIT
+  level         Int      // Account hierarchy level (1-6)
+  parentCode    String?
+
+  // Balances
+  balance       Decimal @default(0) @db.Decimal(15, 2)
+  period        String   // e.g., "2024-Q1", "2024-12"
+
+  // Multi-tenancy
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, code, period])
+  @@index([tenantId])
+  @@index([accountType])
+  @@map("financial_accounts")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+enum AccountNature {
+  DEBIT
+  CREDIT
+}
+
+// ==========================================
+// MODULE 1: SICSES COMPLIANCE
+// ==========================================
+
+model SicsesReport {
+  id              String   @id @default(cuid())
+
+  // Report Information
+  reportType      SicsesReportType
+  reportingPeriod String   // e.g., "2024-Q1", "2024-12"
+  generatedAt     DateTime @default(now())
+  generatedBy     String   // User ID
+
+  // File Information
+  fileName        String
+  fileSize        Int
+  filePath        String   // Storage path
+  fileHash        String   // SHA-256 hash for integrity
+
+  // Validation
+  validationStatus ValidationStatus @default(PENDING)
+  validationErrors Json?
+
+  // Submission
+  submittedAt     DateTime?
+  submissionStatus SubmissionStatus @default(NOT_SUBMITTED)
+
+  // Multi-tenancy
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([reportType])
+  @@index([reportingPeriod])
+  @@map("sicses_reports")
+}
+
+enum SicsesReportType {
+  F9998   // Identificación
+  F3      // Catálogo Único de Cuentas
+  F9999   // Base Social
+  F130    // Información Estadística
+  F8888   // Órganos de Dirección y Control
+  F9013   // Informe Individual de Aportes
+}
+
+enum ValidationStatus {
+  PENDING
+  VALID
+  INVALID
+}
+
+enum SubmissionStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+// ==========================================
+// AUDIT & SECURITY
+// ==========================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+
+  // Action Details
+  action      AuditAction
+  entity      String   // Entity type (e.g., "User", "Associate", "Report")
+  entityId    String   // Entity ID
+  changes     Json?    // JSON with before/after values
+  ipAddress   String?
+  userAgent   String?
+
+  // User
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Multi-tenancy
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  GENERATE_REPORT
+  SUBMIT_REPORT
+  EXPORT_DATA
+  IMPORT_DATA
+}
