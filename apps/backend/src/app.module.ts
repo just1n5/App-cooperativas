@@ -1,18 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 // Import modules (to be created)
-// import { AuthModule } from './auth/auth.module';
 // import { TenantsModule } from './tenants/tenants.module';
 // import { UsersModule } from './users/users.module';
 // import { AssociatesModule } from './associates/associates.module';
 // import { GovernanceModule } from './governance/governance.module';
 // import { FinancialModule } from './financial/financial.module';
 // import { SicsesModule } from './sicses/sicses.module';
-// import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -22,17 +23,13 @@ import { AppService } from './app.service';
       envFilePath: ['.env.local', '.env'],
     }),
 
-    // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
+    // Database
+    PrismaModule,
+
+    // Authentication
+    AuthModule,
 
     // Feature modules (uncomment as they are created)
-    // PrismaModule,
-    // AuthModule,
     // TenantsModule,
     // UsersModule,
     // AssociatesModule,
@@ -41,6 +38,13 @@ import { AppService } from './app.service';
     // SicsesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Apply JWT guard globally to all routes (can be overridden with @Public())
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}
