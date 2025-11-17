@@ -1,10 +1,11 @@
 # Development Progress Tracker
 
-## 📊 Overall Progress: 30% Complete
+## 📊 Overall Progress: 42% Complete
 
 **Current Phase**: Phase 2.1 - Core Infrastructure (Week 1)
 **Start Date**: 2025-11-11
 **Target MVP Date**: 2026-01-06 (8 weeks)
+**Last Updated**: 2025-11-17
 
 ---
 
@@ -34,32 +35,36 @@
 
 ## 🔄 Phase 2.1: Core Infrastructure (IN PROGRESS)
 
-**Status**: 🔄 0% Complete
+**Status**: 🔄 58% Complete
 **Current Week**: Week 1 of 8
 **Focus**: Authentication, Authorization, Multi-tenancy
 
-### Week 1: Authentication & Authorization (0/24 hours)
+### Week 1: Authentication & Authorization (14/24 hours) ✅
 
-- [ ] **Task 1.1**: Create Prisma Service Module (0/2h)
-  - [ ] Singleton Prisma client
-  - [ ] Global module for DI
-  - [ ] Error handling wrapper
+- [x] **Task 1.1**: Create Prisma Service Module (2h) ✅
+  - [x] Singleton Prisma client with lifecycle management
+  - [x] Global module for dependency injection
+  - [x] Error handling and query logging
+  - [x] Database cleanup utility for testing
 
-- [ ] **Task 1.2**: Implement JWT Authentication (0/8h)
-  - [ ] Install auth dependencies
-  - [ ] Create Auth module structure
-  - [ ] JWT strategy with Passport
-  - [ ] Login/register/logout endpoints
-  - [ ] Refresh token mechanism
+- [x] **Task 1.2**: Implement JWT Authentication (8h) ✅
+  - [x] Auth module with JWT + Passport
+  - [x] JWT strategy implementation
+  - [x] Login/register/refresh endpoints
+  - [x] Refresh token mechanism
+  - [x] Transaction-based registration (tenant + user)
+  - [x] Password hashing with bcrypt
 
-- [ ] **Task 1.3**: Implement RBAC System (0/4h)
-  - [ ] Roles guard
-  - [ ] Permissions decorator
-  - [ ] Role-based endpoint protection
+- [x] **Task 1.3**: Implement RBAC System (2h) ✅
+  - [x] Roles guard (5 roles: ADMIN, MANAGER, ACCOUNTANT, AUDITOR, USER)
+  - [x] @Roles() decorator
+  - [x] Global JWT guard with @Public() override
 
-- [ ] **Task 1.4**: Create Auth DTOs and Validators (0/2h)
-  - [ ] LoginDto, RegisterDto, RefreshTokenDto
-  - [ ] Validation decorators
+- [x] **Task 1.4**: Create Auth DTOs and Validators (2h) ✅
+  - [x] LoginDto with email/password validation
+  - [x] RegisterDto with NIT format and password strength validation
+  - [x] RefreshTokenDto
+  - [x] AuthResponseDto with user payload
 
 ### Week 2: Multi-tenancy & Base UI (0/24 hours)
 
@@ -70,11 +75,11 @@
 - [ ] **Task 2.5**: Create Dashboard Layout (0/5h)
 
 **Phase 2.1 Target Deliverables**:
-- ⏳ JWT authentication working
-- ⏳ RBAC functional
-- ⏳ Multi-tenancy isolation
-- ⏳ Base UI components
-- ⏳ Dashboard layout
+- ✅ JWT authentication working (100%)
+- ✅ RBAC functional (100%)
+- ⏳ Multi-tenancy isolation (0%)
+- ⏳ Base UI components (0%)
+- ⏳ Dashboard layout (0%)
 
 ---
 
@@ -213,12 +218,23 @@
 
 ## 📝 Recent Updates
 
+### 2025-11-17
+- ✅ Implemented Prisma Service Module with lifecycle management
+- ✅ Complete JWT authentication system with Passport
+- ✅ Register endpoint (atomic tenant + admin user creation)
+- ✅ Login with credentials validation
+- ✅ Refresh token mechanism
+- ✅ RBAC with roles guard and decorators
+- ✅ Global JWT guard with @Public() override
+- ✅ Comprehensive DTOs with validation
+- 🎯 Ready for multi-tenancy middleware
+
 ### 2025-11-11
 - ✅ Completed Phase 1 (Foundation Setup)
 - ✅ Created comprehensive MVP roadmap
 - ✅ Documented SICSES specifications
 - ✅ Established development guidelines
-- 🎯 Ready to start Phase 2.1 (Authentication)
+- 🎯 Started Phase 2.1 (Authentication)
 
 ---
 
